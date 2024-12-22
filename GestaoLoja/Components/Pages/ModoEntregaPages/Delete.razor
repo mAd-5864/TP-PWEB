@@ -1,0 +1,68 @@
+﻿@page "/modoentregas/delete"
+
+@attribute [Authorize(Roles = "Admin")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Entities
+@using GestaoLoja.Data
+
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Apagar</PageTitle>
+
+<h1>Apagar registo</h1>
+
+<h3>Tem a certeza de que quer apagar este registo?</h3>
+<div>
+    <h4>Modo de disponibilização</h4>
+    <hr />
+    @if (modoentrega is null)
+    {
+        <p><em>Carregando...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@modoentrega.Nome</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Detalhe</dt>
+            <dd class="col-sm-10">@modoentrega.Detalhe</dd>
+        </dl>
+        <EditForm method="post" Model="modoentrega" OnValidSubmit="DeleteModoEntrega" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(modoentrega is null)" onclick="return confirm('Tem a certeza que deseja apagar este registo?')"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></button> |
+            <a href="/modoentregas" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+
+        </EditForm>
+    }
+</div>
+
+@code {
+    ModoEntrega? modoentrega;
+
+    [SupplyParameterFromQuery]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        modoentrega = await context.ModosEntrega.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (modoentrega is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    public async Task DeleteModoEntrega()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.ModosEntrega.Remove(modoentrega!);
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/modoentregas");
+    }
+}

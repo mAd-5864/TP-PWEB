@@ -1,0 +1,56 @@
+﻿@page "/categoria"
+
+@* @attribute [Authorize(Roles = "Admin")] *@
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@using GestaoLoja.Entities
+@using GestaoLoja.Data
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@implements IAsyncDisposable
+
+<PageTitle>Categorias</PageTitle>
+
+<h1>Listagem de Categorias de Produtos</h1>
+
+<p>
+    <a title="Nova categoria!" href="categoria/create"><img src="/img/novo.png" style="height:50px" /></a>
+</p>
+
+<QuickGrid Class="table" Items="context.Categorias.OrderBy(x => x.Ordem)">
+
+    <TemplateColumn Context="categoria">
+        @if(categoria.Imagem is not null)
+        {
+            <img title="Imagem Actual: @categoria.UrlImagem" id="imagePreview" class="img-thumbnail  mt-2" src="data:image/*;base64,@(Convert.ToBase64String(categoria.Imagem))" style="width:100px">
+        }
+        else
+        {
+            <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:100px;">
+        }
+
+    </TemplateColumn>
+
+    <PropertyColumn Property="categoria => categoria.Nome" />
+
+    <PropertyColumn Property="categoria => categoria.Ordem" />
+
+    <TemplateColumn Context="categoria">
+        <a title="Editar" href="@($"categoria/edit?id={categoria.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+        <a title="Detalhes" href="@($"categoria/details?id={categoria.Id}")"><img title="Detalhes" src="/img/detailsicon.png" style="height:30px" /></a> |
+        <a title="Apagar" href="@($"categoria/delete?id={categoria.Id}")"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    ApplicationDbContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

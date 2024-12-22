@@ -1,0 +1,58 @@
+﻿@page "/modoentregas/create"
+
+@attribute [Authorize(Roles = "Admin")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Entities
+@using GestaoLoja.Data
+
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Criar</PageTitle>
+
+<h1>Criar novo registo</h1>
+
+<h4>Modo de Disponibilização</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+
+        <EditForm method="post" Model="modoEntrega" OnValidSubmit="AddModoEntrega" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome:</label> 
+                <InputText id="nome" @bind-Value="modoEntrega.Nome" class="form-control" />
+                <ValidationMessage For="() => modoEntrega.Nome" class="text-danger" />
+            </div>        
+            <div class="mb-3">
+                <label for="detalhe" class="form-label">Detalhe:</label> 
+                <InputText id="detalhe" @bind-Value="modoEntrega.Detalhe" class="form-control" />
+                <ValidationMessage For="() => modoEntrega.Detalhe" class="text-danger" />
+            </div>        
+            <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+            <a href="/modoentregas" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </EditForm>
+    </div>
+</div>
+
+
+@code {
+
+    [SupplyParameterFromForm]
+    public ModoEntrega modoEntrega { get; set; } = new();
+
+    // To protect from overposting attacks, see https://aka.ms/RazorPagesCRUD
+    public async Task AddModoEntrega()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        context.ModosEntrega.Add(modoEntrega);
+
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/modoentregas");
+    }
+}

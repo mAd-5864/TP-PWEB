@@ -1,0 +1,44 @@
+﻿@page "/modoentregas"
+
+@* @attribute [Authorize(Roles = "Admin")] *@
+
+
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using GestaoLoja.Entities
+@using GestaoLoja.Data
+
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@implements IAsyncDisposable
+
+<PageTitle>Listagem</PageTitle>
+
+<h1>Listagem de Modos de Disponibilização</h1>
+
+<p>
+    <a title="Novo registo!" href="modoentregas/create"><img src="/img/novo.png" style="height:50px" /></a>
+</p>
+
+<QuickGrid Class="table" Items="context.ModosEntrega">
+    <PropertyColumn Property="modoentrega => modoentrega.Nome" />
+    <PropertyColumn Property="modoentrega => modoentrega.Detalhe" />
+
+    <TemplateColumn Context="modoentrega">
+        <a title="Editar" href="@($"modoentregas/edit?id={modoentrega.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+        <a title="Detalhes" href="@($"modoentregas/details?id={modoentrega.Id}")"><img title="Detalhes" src="/img/detailsicon.png" style="height:30px" /></a> |
+        <a title="Apagar" href="@($"modoentregas/delete?id={modoentrega.Id}")"><img title="Apagar" src="/img/deleteicon.png" style="height:30px" /></a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    ApplicationDbContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

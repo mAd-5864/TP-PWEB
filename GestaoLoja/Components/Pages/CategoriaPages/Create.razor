@@ -1,0 +1,154 @@
+﻿@page "/categoria/create"
+
+@attribute [Authorize(Roles = "Admin")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Entities
+@using GestaoLoja.Data
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Criar</PageTitle>
+
+<h1>Criar registo!</h1>
+
+<h4>Categoria</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="Categoria" OnValidSubmit="AddCategoria" enctype="multipart/form-data" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="mb-3">
+
+                <div>
+                    @if (@Categoria.Imagem != null && @Categoria.Imagem.Length > 0)
+                    {
+                        <img title="@Categoria.Nome" id="imagePreview" class="img-thumbnail  mt-2" src="Produtos\@Categoria.Imagem" style="width:100px;">
+                    }
+                    else
+                    {
+                        <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:100px;">
+                    }
+                </div>
+
+                <label for="nome" class="form-label">Nome:</label> 
+                <InputText id="nome" @bind-Value="Categoria.Nome" class="form-control" /> 
+                <ValidationMessage For="() => Categoria.Nome" class="text-danger" /> 
+            </div>        
+        
+            <div class="mb-3">
+                <label for="ordem" class="form-label">Ordem na visualização:</label> 
+                <InputNumber id="ordem" @bind-Value="Categoria.Ordem" class="form-control" /> 
+                <ValidationMessage For="() => Categoria.Ordem" class="text-danger" /> 
+            </div>       
+            
+            <div class="mb-3">
+                <label for="imageUri" class="form-label">Imagem:</label>
+                <input id="imageUri"
+                       type="file"
+                       name="Categoria.ImageFile"
+                       class="form-control"
+                       accept=".png, .jpg, .jpeg"
+                       onchange="document.getElementById('imagePreview').src = window.URL.createObjectURL(this.files[0])" />
+            </div>
+
+            <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+            <a href="/produtos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+
+    [SupplyParameterFromForm]
+    public Categoria Categoria { get; set; } = new();
+
+    // To protect from overposting attacks, see https://aka.ms/RazorPagesCRUD
+    public async Task AddCategoria()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Categorias.Add(Categoria);
+
+        try
+        {
+            if (Categoria.ImageFile != null)
+            {
+                if (Categoria.ImageFile.Length > (200 * 1024))
+                {
+                    NavigationManager.NavigateTo("/produtos/edit");
+                }
+
+                if (!isValidFileType(Categoria.ImageFile.FileName))
+                {
+                    NavigationManager.NavigateTo("/produtos/edit");
+                }
+                else Categoria.UrlImagem = Categoria.ImageFile.FileName;
+
+                //Apaga img existente
+                //           await deleteImage(produto.Id, produto.UrlImagem);
+
+                using (var dataStream = new MemoryStream())
+                {
+                    await Categoria.ImageFile.CopyToAsync(dataStream);
+                    Categoria.Imagem = dataStream.ToArray();
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ProdutoExists(Categoria!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/categoria");
+    }
+
+    bool isValidFileType(string fileName)
+    {
+        string ext = Path.GetExtension(fileName);
+        switch (ext.ToLower())
+        {
+            case ".jpg":
+                return true;
+            case ".jpeg":
+                return true;
+            case ".png":
+                return true;
+            default:
+                return false;
+        }
+    }
+    bool isValidFileType(IFormFile file)
+    {
+        string ext = Path.GetExtension(file.Name);
+        switch (ext.ToLower())
+        {
+            case ".jpg":
+                return true;
+            case ".jpeg":
+                return true;
+            case ".png":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool ProdutoExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Produtos.Any(e => e.Id == id);
+    }
+
+}

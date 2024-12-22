@@ -1,0 +1,68 @@
+﻿@page "/categoria/details"
+
+@attribute [Authorize(Roles = "Admin, Gestor")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Entities
+@using GestaoLoja.Data
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Detalhes</PageTitle>
+
+<h1>Detalhes do registo!</h1>
+
+<div>
+    <h4>Categoria</h4>
+    <hr />
+    @if (categoria is null)
+    {
+        <p><em>Carregando...</em></p>
+    }
+    else {
+        <dl class="row">
+
+            <dd>    
+                <div>
+                    @if (categoria.Imagem is not null)
+                    {
+                        <img title="@categoria.Nome" id="imagePreview" class="img-thumbnail  mt-2" src="data:image/*;base64,@(Convert.ToBase64String(categoria.Imagem))" style="width:200px">
+                    }
+                    else
+                    {
+                        <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:50%;">
+                    }
+                </div>
+            </dd>
+
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@categoria.Nome</dd>
+
+            <dt class="col-sm-2">Ordem</dt>
+            <dd class="col-sm-10">@categoria.Ordem</dd>
+        </dl>
+        <div>
+            <a href="@($"/categoria/edit?id={categoria.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+            <a href="/categoria" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </div>
+    }
+</div>
+
+@code {
+    Categoria? categoria;
+
+    [SupplyParameterFromQuery]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        categoria = await context.Categorias.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (categoria is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

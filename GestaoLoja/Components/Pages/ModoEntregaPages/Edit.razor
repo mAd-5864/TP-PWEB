@@ -1,0 +1,100 @@
+﻿@page "/ModoEntregas/edit"
+
+@attribute [Authorize(Roles = "Admin")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Entities
+@using GestaoLoja.Data
+
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Editar</PageTitle>
+
+<h1>Editar registo!</h1>
+
+<h4>Modo de Disponibilização</h4>
+<hr />
+@if (ModoEntrega is null)
+{
+    <p><em>Carregando...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="ModoEntrega" OnValidSubmit="UpdateModoEntrega" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <input type="hidden" name="ModoEntrega.Id" value="@ModoEntrega.Id" />
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome:</label>
+                    <InputText id="nome" @bind-Value="ModoEntrega.Nome" class="form-control" />
+                    <ValidationMessage For="() => ModoEntrega.Nome" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="detalhe" class="form-label">Detalhe:</label>
+                    <InputText id="detalhe" @bind-Value="ModoEntrega.Detalhe" class="form-control" />
+                    <ValidationMessage For="() => ModoEntrega.Detalhe" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+                <a href="/modoentregas" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+            </EditForm>
+        </div>
+    </div>
+}
+
+
+@code {
+
+
+    [SupplyParameterFromQuery]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    public ModoEntrega? ModoEntrega { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        ModoEntrega ??= await context.ModosEntrega.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (ModoEntrega is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more details, see https://aka.ms/RazorPagesCRUD.
+    public async Task UpdateModoEntrega()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(ModoEntrega!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ModoEntregaExists(ModoEntrega!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/modoentregas");
+    }
+
+    bool ModoEntregaExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.ModosEntrega.Any(e => e.Id == id);
+    }
+}

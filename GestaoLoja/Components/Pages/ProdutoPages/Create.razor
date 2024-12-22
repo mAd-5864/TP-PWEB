@@ -1,0 +1,218 @@
+﻿@page "/produtos/create"
+
+@* @attribute [Authorize(Roles = "Admin")] *@
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Entities
+@using GestaoLoja.Data
+@inject IDbContextFactory<GestaoLoja.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Criar Registo</PageTitle>
+
+<h1>Criar Registo</h1>
+
+<h4>Produto</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="Produto" OnValidSubmit="AddProduto" enctype="multipart/form-data" FormName="create" Enhance>           
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="mb-3">
+
+                <div>
+                    @if (@Produto.Imagem != null && @Produto.Imagem.Length > 0)
+                    {
+                        <img title="@Produto.Nome" id="imagePreview" class="img-thumbnail  mt-2" src="Produtos\@Produto.Imagem" style="width:100px;">
+                    }
+                    else
+                    {
+                        <img id="imagePreview" class="img-thumbnail mt-2" src="img/noproductstrans.png" style="width:100px;">
+                    }
+                </div>
+                <div class="mb-3">
+                    <label for="imageUri" class="form-label">Imagem:</label>
+                    <input id="imageUri"
+                           type="file"
+                           name="Produto.ImageFile"
+                           class="form-control"
+                           accept=".png, .jpg, .jpeg"
+                           onchange="document.getElementById('imagePreview').src = window.URL.createObjectURL(this.files[0])" />
+                </div>
+
+                <label for="nome" class="form-label">Nome:</label> 
+                <InputText id="nome" @bind-Value="Produto.Nome" class="form-control" /> 
+                <ValidationMessage For="() => Produto.Nome" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="detalhe" class="form-label">Detalhes:</label> 
+                <InputText id="detalhe" @bind-Value="Produto.Detalhe" class="form-control" /> 
+                <ValidationMessage For="() => Produto.Detalhe" class="text-danger" /> 
+            </div>        
+        
+            <div class="mb-3">
+                <label for="origem" class="form-label">Origem:</label>
+                <InputText id="origem" @bind-Value="Produto.Origem" class="form-control" />
+                <ValidationMessage For="() => Produto.Origem" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="preco" class="form-label">Preço:</label> 
+                <InputNumber id="preco" @bind-Value="Produto.Preco" class="form-control" /> 
+                <ValidationMessage For="() => Produto.Preco" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="maisvendido" class="form-label">Mais Vendido:</label> 
+                <InputCheckbox id="maisvendido" @bind-Value="Produto.MaisVendido" class="form-check-input" /> 
+                <ValidationMessage For="() => Produto.MaisVendido" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="emstock" class="form-label">Stock:</label> 
+                <InputNumber id="emstock" @bind-Value="Produto.EmStock" class="form-control" /> 
+                <ValidationMessage For="() => Produto.EmStock" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="disponivel" class="form-label">Disponível:</label> 
+                <InputCheckbox id="disponivel" @bind-Value="Produto.Disponivel" class="form-check-input" /> 
+                <ValidationMessage For="() => Produto.Disponivel" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="modoentregaid" class="form-label">Modo Entrega:</label>
+                <InputSelect id="modosEntrega" class="form-group" @bind-Value="@Produto.ModoEntregaId">
+                    <option value="-1">Disponibilização</option>
+                    @foreach (var item in selModo)
+                    {
+                        <option value="@item.Id ">@item.Nome</option>
+                    }
+                </InputSelect>
+            </div>        
+            <div class="mb-3">
+                <label for="categoriaid" class="form-label">Categoria:</label> 
+                    <InputSelect id="ListaPaises" class="form-group" @bind-Value="@Produto.CategoriaId">
+                        <option value="-1">Categoria</option>
+                        @foreach (var item in selCategorias)
+                        {
+                            <option value="@item.Id ">@item.Nome</option>
+                        }
+                    </InputSelect>
+            </div>
+
+
+            
+            <button type="submit" class="btn btn-primary"><img title="Gravar" src="/img/saveicon.png" style="height:30px" /></button>
+            <a href="/produtos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        
+        </EditForm>
+    </div>
+</div>
+
+@code {
+
+        [SupplyParameterFromForm]
+        public Produto Produto { get; set; } = new();
+
+        List<Categoria> selCategorias = new ();
+
+        List<ModoEntrega> selModo = new();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        selCategorias =  context.Categorias
+                        .OrderBy(X => X.Ordem)
+                        .ToList();
+
+        selModo = context.ModosEntrega
+                        .OrderBy(X => X.Nome)
+                        .ToList();
+    }
+
+    // To protect from overposting attacks, see https://aka.ms/RazorPagesCRUD
+    public async Task AddProduto()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Produtos.Add(Produto);
+
+        try
+        {
+            if (Produto.ImageFile != null)
+            {
+
+                if (Produto.ImageFile.Length > (200 * 1024))
+                {
+                    NavigationManager.NavigateTo("/produtos/edit");
+                }
+
+                if (!isValidFileType(Produto.ImageFile.FileName))
+                {
+                    NavigationManager.NavigateTo("/produtos/edit");
+                }
+                else Produto.UrlImagem = Produto.ImageFile.FileName;
+
+                using (var dataStream = new MemoryStream())
+                {
+                    await Produto.ImageFile.CopyToAsync(dataStream);
+                    Produto.Imagem = dataStream.ToArray();
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ProdutoExists(Produto!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/produtos");
+    }
+
+    bool isValidFileType(string fileName)
+    {
+        string ext = Path.GetExtension(fileName);
+        switch (ext.ToLower())
+        {
+            case ".jpg":
+                return true;
+            case ".jpeg":
+                return true;
+            case ".png":
+                return true;
+            default:
+                return false;
+        }
+    }
+    bool isValidFileType(IFormFile file)
+    {
+        string ext = Path.GetExtension(file.Name);
+        switch (ext.ToLower())
+        {
+            case ".jpg":
+                return true;
+            case ".jpeg":
+                return true;
+            case ".png":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool ProdutoExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Produtos.Any(e => e.Id == id);
+    }
+}

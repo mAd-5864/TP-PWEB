@@ -1,0 +1,92 @@
+﻿@page "/produtos/details"
+
+@attribute [Authorize(Roles = "Admin,Gestor")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Entities
+@using GestaoLoja.Data
+@inject IDbContextFactory<GestaoLoja.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Detalhes</PageTitle>
+
+<h1>Detalhe do produto</h1>
+
+<div>
+    <h4>Produto</h4>
+    <hr />
+    @if (produto is null)
+    {
+        <p><em>Carregando...</em></p>
+    }
+    else {
+        
+            string MaisVende = "";
+            string EstaDisp = "";
+        
+
+        @if (@produto.MaisVendido)
+        {
+            MaisVende = "Sim";
+        }
+        else
+        {
+            MaisVende = "Não";
+        }
+
+        @if (@produto.Disponivel)
+        {
+            EstaDisp = "Sim";
+        }
+        else
+        {
+            EstaDisp = "Não";
+        }
+
+        <dl class="row">
+
+            <dd>    <img title="@produto.Nome" id="imagePreview" class="img-thumbnail  mt-2" src="data:image/*;base64,@(Convert.ToBase64String(produto.Imagem))" style="width:200px"></dd>
+
+            <dt class="col-sm-2">Nome</dt>
+            <dd class="col-sm-10">@produto.Nome</dd>
+            <dt class="col-sm-2">Detalhe</dt>
+            <dd class="col-sm-10">@produto.Detalhe</dd>
+            <dt class="col-sm-2">Preço</dt>
+            <dd class="col-sm-10">@produto.Preco €/@produto.modoentrega.Nome</dd>
+            <dt class="col-sm-2">Mais Vendido</dt>
+            <dd class="col-sm-10">@MaisVende</dd>
+            <dt class="col-sm-2">Stock</dt>
+            <dd class="col-sm-10">@produto.EmStock</dd>
+            <dt class="col-sm-2">Disponível</dt>
+            <dd class="col-sm-10">@EstaDisp</dd>
+            <dt class="col-sm-2">Modo Entrega</dt>
+            <dd class="col-sm-10">@produto.modoentrega.Nome</dd>
+            <dt class="col-sm-2">Categoria</dt>
+            <dd class="col-sm-10">@produto.categoria.Nome</dd>
+        </dl>
+        <div>
+            <a href="@($"/produtos/edit?id={produto.Id}")"><img title="Editar" src="/img/editicon.png" style="height:30px" /></a> |
+            <a href="/produtos" type="button" class="btn btn-outline-secondary"><img title="Recuar" src="/img/backicon.png" style="height:30px" /></a>
+        </div>
+    }
+</div>
+
+@code {
+    Produto? produto;
+
+    [SupplyParameterFromQuery]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        produto = await context.Produtos.Include("categoria").Include("modoentrega")
+        .FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (produto is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}
